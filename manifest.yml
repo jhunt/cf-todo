@@ -1,0 +1,6 @@
+---
+applications:
+  - name: todo
+    memory: 64M
+    buildpacks:
+      - go_buildpack
