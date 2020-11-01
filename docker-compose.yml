@@ -8,7 +8,8 @@ services:
       - MYSQL_ROOT_PASSWORD=foo
   todo:
     depends_on: ['mysql']
-    image: foo
+    build:
+      context: .
     ports: ['8086:8080']
     environment:
       - "DB_DSN=root:foo@tcp(mysql:3306)/mysql?charset=utf8mb4&parseTime=True&loc=Local"
