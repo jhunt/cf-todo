@@ -156,7 +156,7 @@ func main() {
 	mux.Handle("/", http.FileServer(http.Dir(public)))
 	mux.HandleFunc("/v1/", r.ServeHTTP)
 
-	fmt.Printf("@G{cf-todo} starting @C{up}\n")
+	fmt.Printf("✅ @G{cf-todo} starting @C{up} on @M{%s}\n", bind)
 	err = http.ListenAndServe(bind, cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
 		Debug:          os.Getenv("DEBUG") == "yes",
@@ -167,6 +167,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("@G{cf-todo} shutting @C{down}\n")
+	fmt.Printf("✅ @G{cf-todo} shutting @C{down}\n")
 	os.Exit(0)
 }
