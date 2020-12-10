@@ -2,5 +2,3 @@
 applications:
   - name: todo
     memory: 64M
-    env:
-      BP_KEEP_FILES: ux/dist/*

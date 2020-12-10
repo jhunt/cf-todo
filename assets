@@ -1,0 +1,50 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use File::Find;
+use Data::Dumper;
+
+print "package main\n";
+print "func init() {\n";
+print "\tfiles = make(map[string] File, 0)\n";
+
+find(sub {
+	return unless -f;
+
+	my $filename = $File::Find::name;
+	$filename =~ s|ux/dist||;
+	print "\n";
+	print "\tfiles[\"$filename\"] = File{\n";
+
+	my $mime = 'application/octet-stream';
+	$mime = 'text/html'       if m/\.html?$/;
+	$mime = 'text/css'        if m/\.css/;
+	$mime = 'text/javascript' if m/\.js/;
+
+	print "\t\tt: \"$mime\",\n";
+	print "\t\tb: []byte{\n";
+
+	open my $fh, "<", $_
+		or die "failed to open: $File::Find::name: $!\n";
+
+	my $WIDTH = 16;
+	my $b;
+	my $n = 0;
+	while (my $r = sysread($fh, $b, 1024)) {
+		for my $i (0..$r-1){
+			my $c = substr($b, $i, 1);
+			print "\t\t\t" if ($n + $i) % $WIDTH == 0;
+			print "'\\x".sprintf("%02x", ord($c))."',";
+			print "\n" if ($n + $i + 1) % $WIDTH == 0;
+		}
+		$n += $r;
+	}
+	close $fh;
+
+	print "\n" if $n % $WIDTH != 0;
+	print "\t\t},\n";
+	print "\t}\n";
+}, 'ux/dist');
+
+print "}\n";
