@@ -177,32 +177,35 @@ func main() {
 		req.Success("item deleted")
 	})
 
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/", r.ServeHTTP)
+
 	public := os.Getenv("WEBROOT")
 	if public == "" {
 		public = "ux/dist"
 	}
+	if _, err := os.Stat(public); err == nil {
+		mux.Handle("/", http.FileServer(http.Dir(public)))
+	} else {
+		mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+			if req.Method != "GET" {
+				w.WriteHeader(405)
+				return
+			}
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/v1/", r.ServeHTTP)
-	mux.HandleFunc("/", func (w http.ResponseWriter, req *http.Request) {
-		if req.Method != "GET" {
-			w.WriteHeader(405)
-			return
-		}
-
-		path := req.URL.Path
-		if path == "/" {
-			path = "/index.html"
-		}
-		if f, ok := files[path]; ok {
-			w.Header().Set("Content-Type", f.t)
-			w.Write(f.b)
-			return
-		}
-		w.WriteHeader(404)
-		fmt.Fprintf(w, "oops... 404 not found.\n")
-	})
+			path := req.URL.Path
+			if path == "/" {
+				path = "/index.html"
+			}
+			if f, ok := files[path]; ok {
+				w.Header().Set("Content-Type", f.t)
+				w.Write(f.b)
+				return
+			}
+			w.WriteHeader(404)
+			fmt.Fprintf(w, "oops... 404 not found.\n")
+		})
+	}
 
 	fmt.Printf("✅ @G{cf-todo} starting @C{up} on @M{%s}\n", bind)
 	err := http.ListenAndServe(bind, cors.New(cors.Options{
