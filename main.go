@@ -45,7 +45,7 @@ func main() {
 		}
 		port, ok := instance.GetString("port")
 		if !ok {
-			if n, found := instance.GetUint("port"); found && n > 0{
+			if n, found := instance.GetUint("port"); found && n > 0 {
 				port = fmt.Sprintf("%d", n)
 			} else {
 				fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'port' credential\n", instance.Label)

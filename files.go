@@ -5,4 +5,4 @@ type File struct {
 	t string
 }
 
-var files map[string] File
+var files map[string]File
