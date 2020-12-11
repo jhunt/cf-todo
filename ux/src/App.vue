@@ -1,12 +1,29 @@
 <template>
   <div id="app">
-    <list :list="this.list"></list>
+    <div v-if="loading" class="dialog info">
+      <h1>Loading...</h1>
+      <p>Please wait while we get our bearings...</p>
+    </div>
+    <div v-else-if="!database" class="dialog error">
+      <h1>Database Not Configured</h1>
+      <p>The database that stores todo list items has not been configured yet.</p>
+      <p>Perhaps you could try the following:</p>
+      <pre><code>$ cf create-service mariadb simple db1
+$ watch cf service   # ... wait for "create succeeded"
+$ cf bind-service todo db1
+$ watch cf service   # ... wait for binding to finish
+$ cf restart todo</code></pre>
+      <button @click.prevent="sync()">All Fixed?  Try Again!</button>
+    </div>
+    <list v-else :list="this.list"></list>
+
     <footer>Copyright &copy; 2020 <a href="https://jameshunt.us">James</a> <a href="https://huntprod.com">Hunt</a>.</footer>
   </div>
 </template>
 
 <script>
 import List from './components/List.vue'
+import http from './http.js'
 
 export default {
   name: 'App',
@@ -16,11 +33,24 @@ export default {
   data() {
     return {
       loading: true,
+      database: false,
       list: {
         name: "Things To Do",
         items: []
       }
     }
+  },
+  methods: {
+    sync() {
+      http.GET('/v1/ping')
+        .then(ping => {
+          this.database = ping.db
+          this.loading = false
+        })
+    }
+  },
+  mounted() {
+    this.sync()
   }
 }
 </script>
@@ -48,6 +78,35 @@ export default {
       text-decoration: none;
       color: inherit;
     }
+  }
+}
+.dialog {
+  max-width: 700px;
+  margin: 4em auto;
+  box-shadow: 0 0 24px #ccc;
+  border: 1px solid #e0e0e0;
+  padding: 6em;
+  box-sizing: border-box;
+
+  pre {
+    text-align: left;
+    background-color: #224;
+    color: yellow;
+    padding: 1em;
+    font-size: 110%;
+    line-height: 1.4em;
+  }
+  button {
+    display: block;
+    margin: 2em auto;
+    font-size: 14pt;
+    padding: 1em;
+    background-color: #1bca78;
+    color: #fff;
+    font-weight: bold;
+    border-radius: 6px;
+    border: none;
+    box-shadow: 0 0 8px #ccc;
   }
 }
 </style>

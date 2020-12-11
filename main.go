@@ -73,19 +73,20 @@ func main() {
 
 		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", username, password, hostname, port, name)
 	}
-	if dsn == "" {
-		fmt.Fprintf(os.Stderr, "💥 unable to determine database dsn from environment: No DB_DSN or VCAP_SERVICE environment variables found\n")
-		os.Exit(1)
-	}
-	//dsn = "root:foo@tcp(127.0.0.1:3306)/todos?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "💥 unable to connect to backend database: %s\n", err)
-		os.Exit(1)
+	var db *gorm.DB
+	if dsn != "" {
+		var err error
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "💥 unable to connect to backend database: %s\n", err)
+			os.Exit(1)
+		}
+		db.AutoMigrate(&Item{})
+	} else {
+		//dsn = "root:foo@tcp(127.0.0.1:3306)/todos?charset=utf8mb4&parseTime=True&loc=Local"
+		fmt.Fprintf(os.Stderr, "😳 unable to determine database dsn from environment: No DB_DSN or VCAP_SERVICE environment variables found\n")
 	}
-
-	db.AutoMigrate(&Item{})
 
 	bind := os.Getenv("BIND")
 	if bind == "" {
@@ -101,13 +102,33 @@ func main() {
 		Debug: os.Getenv("DEBUG") == "yes",
 	}
 
+	r.Dispatch("GET /v1/ping", func(req *route.Request) {
+		req.OK(struct {
+			Ping string `json:"ping"`
+			DB   bool   `json:"db"`
+		}{
+			Ping: "PONG",
+			DB:   db != nil,
+		})
+	})
+
 	r.Dispatch("GET /v1/todos", func(req *route.Request) {
+		if db == nil {
+			req.Fail(route.Oops(nil, "database is not yet connected"))
+			return
+		}
+
 		var items []Item
 		db.Find(&items)
 		req.OK(items)
 	})
 
 	r.Dispatch("POST /v1/todos", func(req *route.Request) {
+		if db == nil {
+			req.Fail(route.Oops(nil, "database is not yet connected"))
+			return
+		}
+
 		var in Item
 		if !req.Payload(&in) {
 			return
@@ -119,6 +140,11 @@ func main() {
 	})
 
 	r.Dispatch("PUT /v1/todos/:id", func(req *route.Request) {
+		if db == nil {
+			req.Fail(route.Oops(nil, "database is not yet connected"))
+			return
+		}
+
 		var in Item
 		if !req.Payload(&in) {
 			return
@@ -135,6 +161,11 @@ func main() {
 	})
 
 	r.Dispatch("DELETE /v1/todos/:id", func(req *route.Request) {
+		if db == nil {
+			req.Fail(route.Oops(nil, "database is not yet connected"))
+			return
+		}
+
 		id64, err := strconv.ParseInt(req.Args[1], 10, 32)
 		if err != nil {
 			req.Fail(route.Oops(err, "unable to parse todo item id as numeric"))
@@ -174,7 +205,7 @@ func main() {
 	})
 
 	fmt.Printf("✅ @G{cf-todo} starting @C{up} on @M{%s}\n", bind)
-	err = http.ListenAndServe(bind, cors.New(cors.Options{
+	err := http.ListenAndServe(bind, cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
 		Debug:          os.Getenv("DEBUG") == "yes",
 		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
