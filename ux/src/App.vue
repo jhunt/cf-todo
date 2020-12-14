@@ -1,11 +1,11 @@
 <template>
   <div id="app">
-    <div v-if="loading" class="dialog info">
+    <div v-if="loading && failures == 0" class="dialog info">
       <h1>Loading...</h1>
       <p>Please wait while we get our bearings...</p>
     </div>
     <div v-else-if="!database" class="dialog error">
-      <h1>Database Not Configured</h1>
+      <h1>{{ failureMessage }}</h1>
       <p>The database that stores todo list items has not been configured yet.</p>
       <p>Perhaps you could try the following:</p>
       <pre><code>$ cf create-service mariadb simple db1
@@ -13,7 +13,8 @@ $ watch cf service   # ... wait for "create succeeded"
 $ cf bind-service todo db1
 $ watch cf service   # ... wait for binding to finish
 $ cf restart todo</code></pre>
-      <button @click.prevent="sync()">All Fixed?  Try Again!</button>
+      <button v-if="loading" style="background-color: #777; cursor: default;">Re-checking...</button>
+      <button v-else         @click.prevent="sync()">All Fixed?  Try Again!</button>
     </div>
     <list v-else :list="this.list"></list>
 
@@ -33,20 +34,41 @@ export default {
   data() {
     return {
       loading: true,
+      failures: 0,
       database: false,
       list: {
         name: "Things To Do",
         items: []
-      }
+      },
+      oops: [
+        'Missing Database (still)',
+        'Database Not Configured',
+        'Oops, Not Fixed Yet!',
+        'Database Still Missing',
+      ]
+    }
+  },
+  computed: {
+    failureMessage() {
+      return this.oops[this.failures % this.oops.length]
     }
   },
   methods: {
     sync() {
-      http.GET('/v1/ping')
-        .then(ping => {
-          this.database = ping.db
-          this.loading = false
-        })
+      this.loading = true
+      window.setTimeout(() =>
+        http.GET('/v1/ping')
+          .then(ping => {
+            this.database = ping.db
+            this.loading = false
+            if (!this.database) {
+              this.failures += 1
+            }
+          })
+          .catch(() => {
+            this.loading = false
+            this.failures += 1
+          }), 800)
     }
   },
   mounted() {
@@ -107,6 +129,7 @@ export default {
     border-radius: 6px;
     border: none;
     box-shadow: 0 0 8px #ccc;
+    cursor: pointer;
   }
 }
 </style>
