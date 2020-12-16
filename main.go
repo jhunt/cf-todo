@@ -30,48 +30,45 @@ func main() {
 			os.Exit(1)
 		}
 		instance, found := services.Tagged("mysql")
-		if !found {
-			fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: no 'mysql' service found\n")
-			os.Exit(2)
-		}
-
-		hostname, ok := instance.GetString("hostname")
-		if !ok {
-			hostname, ok = instance.GetString("host")
+		if found {
+			hostname, ok := instance.GetString("hostname")
 			if !ok {
-				fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'hostname' credential\n", instance.Label)
-				os.Exit(3)
+				hostname, ok = instance.GetString("host")
+				if !ok {
+					fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'hostname' credential\n", instance.Label)
+					os.Exit(3)
+				}
 			}
-		}
-		port, ok := instance.GetString("port")
-		if !ok {
-			if n, found := instance.GetUint("port"); found && n > 0 {
-				port = fmt.Sprintf("%d", n)
-			} else {
-				fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'port' credential\n", instance.Label)
-				os.Exit(3)
-			}
-		}
-		username, ok := instance.GetString("username")
-		if !ok {
-			fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'username' credential\n", instance.Label)
-			os.Exit(3)
-		}
-		password, ok := instance.GetString("password")
-		if !ok {
-			fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'password' credential\n", instance.Label)
-			os.Exit(3)
-		}
-		name, ok := instance.GetString("name")
-		if !ok {
-			name, ok = instance.GetString("database")
+			port, ok := instance.GetString("port")
 			if !ok {
-				fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'name' (database name) credential\n", instance.Label)
+				if n, found := instance.GetUint("port"); found && n > 0 {
+					port = fmt.Sprintf("%d", n)
+				} else {
+					fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'port' credential\n", instance.Label)
+					os.Exit(3)
+				}
+			}
+			username, ok := instance.GetString("username")
+			if !ok {
+				fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'username' credential\n", instance.Label)
 				os.Exit(3)
 			}
-		}
+			password, ok := instance.GetString("password")
+			if !ok {
+				fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'password' credential\n", instance.Label)
+				os.Exit(3)
+			}
+			name, ok := instance.GetString("name")
+			if !ok {
+				name, ok = instance.GetString("database")
+				if !ok {
+					fmt.Fprintf(os.Stderr, "💥 VCAP_SERVICES: '%s' service has no 'name' (database name) credential\n", instance.Label)
+					os.Exit(3)
+				}
+			}
 
-		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", username, password, hostname, port, name)
+			dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", username, password, hostname, port, name)
+		}
 	}
 
 	var db *gorm.DB
