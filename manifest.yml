@@ -2,3 +2,4 @@
 applications:
   - name: todo
     memory: 64M
+    disk_quota: 20M
