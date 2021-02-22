@@ -9,9 +9,9 @@
       <p>The database that stores todo list items has not been configured yet.</p>
       <p>Perhaps you could try the following:</p>
       <pre><code>$ cf create-service mariadb simple db1
-$ watch cf service   # ... wait for "create succeeded"
+$ watch cf service db1  # ... wait for "create succeeded"
 $ cf bind-service todo db1
-$ watch cf service   # ... wait for binding to finish
+$ watch cf service db1  # ... wait for binding to finish
 $ cf restart todo</code></pre>
       <button v-if="loading" style="background-color: #777; cursor: default;">Re-checking...</button>
       <button v-else         @click.prevent="sync()">All Fixed?  Try Again!</button>
