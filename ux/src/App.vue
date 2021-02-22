@@ -18,7 +18,7 @@ $ cf restart todo</code></pre>
     </div>
     <list v-else :list="this.list"></list>
 
-    <footer>Copyright &copy; 2020 <a href="https://jameshunt.us">James</a> <a href="https://huntprod.com">Hunt</a>.</footer>
+    <footer>Copyright &copy; {{year}} <a href="https://jameshunt.us">James</a> <a href="https://huntprod.com">Hunt</a>.</footer>
   </div>
 </template>
 
@@ -49,6 +49,9 @@ export default {
     }
   },
   computed: {
+    year() {
+      return new Date().getFullYear()
+    },
     failureMessage() {
       return this.oops[this.failures % this.oops.length]
     }
